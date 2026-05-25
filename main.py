@@ -257,3 +257,9 @@ async def solve_implied_vol(
         option_type=body.option_type,
         style=body.style,
     )
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)

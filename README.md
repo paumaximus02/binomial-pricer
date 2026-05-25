@@ -24,7 +24,32 @@ copy .env.example .env        # add MASSIVE_API_KEY
 uvicorn main:app --reload
 ```
 
+Or for cloud/production:
+
+```bash
+python main.py
+```
+
 Open http://127.0.0.1:8000/ for the web UI, or http://127.0.0.1:8000/docs for the Swagger API.
+
+## Deploy
+
+Set environment variables on your host:
+
+- `MASSIVE_API_KEY` — required for live spot lookups
+- `PORT` — optional; default is 8000 when using `python main.py`
+
+Start command:
+
+```bash
+python main.py
+```
+
+Or:
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
 
 ## API Endpoints
 

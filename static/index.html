@@ -15,15 +15,15 @@
         <p class="subtitle">Cox-Ross-Rubinstein tree · European &amp; American options · Greeks &amp; IV</p>
       </div>
       <nav class="tabs" role="tablist">
-        <button class="tab active" data-tab="price" role="tab" aria-selected="true">Price Option</button>
-        <button class="tab" data-tab="iv" role="tab" aria-selected="false">Implied Volatility</button>
+        <button type="button" class="tab active" data-tab="price" role="tab" aria-selected="true" aria-controls="panel-price" id="tab-price">Price Option</button>
+        <button type="button" class="tab" data-tab="iv" role="tab" aria-selected="false" aria-controls="panel-iv" id="tab-iv">Implied Volatility</button>
       </nav>
     </div>
   </header>
 
   <main class="container layout">
     <!-- Price tab -->
-    <section id="panel-price" class="panel active" role="tabpanel">
+    <section id="panel-price" class="panel active" role="tabpanel" aria-labelledby="tab-price">
       <form id="price-form" class="card form-card">
         <h2>Inputs</h2>
 
@@ -163,7 +163,7 @@
     </section>
 
     <!-- IV tab -->
-    <section id="panel-iv" class="panel" role="tabpanel" hidden>
+    <section id="panel-iv" class="panel" role="tabpanel" aria-labelledby="tab-iv" hidden>
       <form id="iv-form" class="card form-card">
         <h2>Inputs</h2>
 

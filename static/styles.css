@@ -258,10 +258,18 @@ h2 {
 }
 
 .panel {
-  display: grid;
+  display: none;
   gap: 1.25rem;
   min-width: 0;
   max-width: 100%;
+}
+
+.panel.active {
+  display: grid;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 .card {

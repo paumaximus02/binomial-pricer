@@ -231,25 +231,25 @@ function optionalRate(inputId) {
   return parseFloat(raw);
 }
 
-// Tabs
-document.querySelectorAll(".tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((t) => {
-      t.classList.remove("active");
-      t.setAttribute("aria-selected", "false");
-    });
-    tab.classList.add("active");
-    tab.setAttribute("aria-selected", "true");
-
-    document.querySelectorAll(".panel").forEach((p) => {
-      p.classList.remove("active");
-      p.hidden = true;
-    });
-    const panel = document.getElementById(`panel-${tab.dataset.tab}`);
-    panel.classList.add("active");
-    panel.hidden = false;
+function switchTab(tabName) {
+  document.querySelectorAll(".tab").forEach((t) => {
+    const isActive = t.dataset.tab === tabName;
+    t.classList.toggle("active", isActive);
+    t.setAttribute("aria-selected", isActive ? "true" : "false");
   });
+
+  document.querySelectorAll(".panel").forEach((p) => {
+    const isActive = p.id === `panel-${tabName}`;
+    p.classList.toggle("active", isActive);
+    p.hidden = !isActive;
+  });
+}
+
+document.querySelectorAll(".tab").forEach((tab) => {
+  tab.addEventListener("click", () => switchTab(tab.dataset.tab));
 });
+
+switchTab("price");
 
 // Fetch spot preview
 document.getElementById("fetch-spot-btn").addEventListener("click", async () => {

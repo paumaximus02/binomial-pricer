@@ -24,11 +24,14 @@ body {
   color: var(--text);
   line-height: 1.5;
   min-height: 100vh;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 .container {
   width: min(1200px, 94vw);
   margin: 0 auto;
+  max-width: 100%;
 }
 
 .header {
@@ -66,6 +69,7 @@ h2 {
 .tabs {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .tab {
@@ -96,21 +100,168 @@ h2 {
   gap: 1.25rem;
   padding: 1.5rem 0 2.5rem;
   align-items: start;
+  min-width: 0;
+  max-width: 100%;
 }
 
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
+    padding: 1rem 0 2rem;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    width: 100%;
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
   }
 
-  .sidebar {
-    order: -1;
+  .header {
+    padding: 1rem 0;
+  }
+
+  .header-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+  }
+
+  h1 {
+    font-size: 1.35rem;
+  }
+
+  .subtitle {
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+
+  .tabs {
+    width: 100%;
+  }
+
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 0.65rem 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .card {
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  fieldset.field-group {
+    padding: 0.85rem;
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .radio-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+
+  .input-row {
+    flex-direction: column;
+  }
+
+  .input-row .btn.secondary {
+    width: 100%;
+  }
+
+  input,
+  select {
+    font-size: 16px; /* prevents iOS zoom on focus */
+    padding: 0.7rem 0.75rem;
+  }
+
+  .btn {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+  }
+
+  .btn.primary {
+    width: 100%;
+  }
+
+  .results-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .metric {
+    padding: 0.7rem;
+  }
+
+  .metric-value {
+    font-size: 1.15rem;
+  }
+
+  .results-meta {
+    font-size: 0.82rem;
+  }
+
+  .chart-card {
+    min-height: 260px;
+    padding: 0.25rem;
+  }
+
+  .chart-plot {
+    height: 240px;
+  }
+
+  .chart-plot .main-svg {
+    max-width: 100%;
+  }
+
+  .toast {
+    left: max(1rem, env(safe-area-inset-left));
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.2rem;
+  }
+
+  .tab {
+    font-size: 0.8rem;
+    padding: 0.6rem 0.35rem;
+  }
+
+  .results-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .metric-value {
+    font-size: 1.05rem;
+  }
+
+  .chart-plot {
+    height: 220px;
+  }
+
+  .chart-card {
+    min-height: 240px;
   }
 }
 
 .panel {
   display: grid;
   gap: 1.25rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .card {
@@ -119,6 +270,9 @@ h2 {
   border-radius: var(--radius);
   padding: 1.25rem 1.5rem;
   box-shadow: var(--shadow);
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .form-card {
@@ -263,12 +417,15 @@ select:focus {
   font-size: 0.88rem;
   margin-bottom: 1rem;
   line-height: 1.6;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .results-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .metric {
@@ -300,6 +457,8 @@ select:focus {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--border);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .charts-heading {
@@ -312,12 +471,14 @@ select:focus {
   margin: 0 0 1rem;
   font-size: 0.82rem;
   color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 .charts-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
+  width: 100%;
 }
 
 .chart-card {
@@ -326,11 +487,23 @@ select:focus {
   border-radius: 8px;
   padding: 0.5rem;
   min-height: 320px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .chart-plot {
   width: 100%;
+  max-width: 100%;
   height: 300px;
+  min-width: 0;
+}
+
+.chart-plot .js-plotly-plot,
+.chart-plot .plotly,
+.chart-plot .svg-container {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .sidebar .glossary {

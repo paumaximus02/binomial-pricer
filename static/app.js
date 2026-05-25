@@ -98,7 +98,50 @@ const CHART_TARGETS = [
 const PLOTLY_CONFIG = {
   responsive: true,
   displayModeBar: false,
+  autosizable: true,
 };
+
+function isMobileLayout() {
+  return window.matchMedia("(max-width: 768px)").matches;
+}
+
+function prepareChartLayout(layout) {
+  const prepared = structuredClone(layout);
+  prepared.autosize = true;
+  delete prepared.width;
+  delete prepared.height;
+
+  if (isMobileLayout()) {
+    prepared.margin = { l: 44, r: 8, t: 40, b: 36, pad: 0 };
+
+    if (prepared.title) {
+      prepared.title =
+        typeof prepared.title === "string"
+          ? { text: prepared.title, font: { size: 12 }, x: 0.02, xanchor: "left" }
+          : {
+              ...prepared.title,
+              font: { size: 12, ...(prepared.title.font || {}) },
+              x: 0.02,
+              xanchor: "left",
+            };
+    }
+
+    prepared.font = { ...(prepared.font || {}), size: 10 };
+
+    for (const axis of ["xaxis", "yaxis"]) {
+      if (!prepared[axis]) continue;
+      prepared[axis] = { ...prepared[axis], tickfont: { size: 9 } };
+      const title = prepared[axis].title;
+      if (typeof title === "string") {
+        prepared[axis].title = { text: title, font: { size: 10 } };
+      } else if (title) {
+        prepared[axis].title = { ...title, font: { size: 10, ...(title.font || {}) } };
+      }
+    }
+  }
+
+  return prepared;
+}
 
 function renderCharts(charts) {
   const section = document.getElementById("price-charts-section");
@@ -115,16 +158,57 @@ function renderCharts(charts) {
   }
 
   section.classList.remove("hidden");
-  note.textContent = "Interactive sensitivity charts at your input parameters (green marker).";
+  note.textContent = "Interactive sensitivity charts — tap a chart point for values. Markers show your current inputs.";
 
   CHART_TARGETS.forEach(({ id, key }) => {
     const el = document.getElementById(id);
     const fig = charts[key];
-    Plotly.react(el, fig.data, fig.layout, PLOTLY_CONFIG);
+    const layout = prepareChartLayout(fig.layout);
+    Plotly.react(el, fig.data, layout, PLOTLY_CONFIG);
   });
 
-  section.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  requestAnimationFrame(() => {
+    observeChartElements();
+    resizeCharts();
+    setTimeout(resizeCharts, 200);
+  });
+
+  if (!isMobileLayout()) {
+    section.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 }
+
+function resizeCharts() {
+  CHART_TARGETS.forEach(({ id }) => {
+    const el = document.getElementById(id);
+    if (!el || !el.classList.contains("js-plotly-plot")) return;
+    Plotly.relayout(el, { autosize: true, width: el.parentElement?.clientWidth || el.clientWidth });
+    Plotly.Plots.resize(el);
+  });
+}
+
+let chartObserver;
+if (typeof ResizeObserver !== "undefined") {
+  chartObserver = new ResizeObserver(() => resizeCharts());
+}
+
+function observeChartElements() {
+  if (!chartObserver) return;
+  CHART_TARGETS.forEach(({ id }) => {
+    const el = document.getElementById(id);
+    if (el) chartObserver.observe(el);
+  });
+}
+
+let resizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(resizeCharts, 150);
+});
+
+window.addEventListener("orientationchange", () => {
+  setTimeout(resizeCharts, 300);
+});
 
 function buildSpotPayload(modeName, symbolId, spotId) {
   const manual = document.querySelector(`input[name="${modeName}"]:checked`).value === "manual";

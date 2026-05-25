@@ -19,8 +19,9 @@ _LAYOUT = dict(
     paper_bgcolor="#1a2332",
     plot_bgcolor="#0f1419",
     font=dict(family="Segoe UI, system-ui, sans-serif", color="#e8edf4", size=12),
-    margin=dict(l=60, r=24, t=56, b=52),
+    margin=dict(l=56, r=16, t=52, b=48),
     hovermode="x unified",
+    autosize=True,
 )
 
 # Distinct line colors per chart (dark-theme friendly)
@@ -48,11 +49,10 @@ def _add_marker(fig: go.Figure, x: float, y: float, label: str, line_color: str)
         go.Scatter(
             x=[x],
             y=[y],
-            mode="markers+text",
+            mode="markers",
             name=label,
-            marker=dict(color=line_color, size=10, line=dict(color="#e8edf4", width=1)),
-            text=[label],
-            textposition="top center",
+            marker=dict(color=line_color, size=9, line=dict(color="#e8edf4", width=1)),
+            hovertemplate=f"{label}<br>%{{x:.4g}} · %{{y:.4g}}<extra></extra>",
             showlegend=False,
         )
     )

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Binomial Option Pricer</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <div>
+        <h1>Binomial Option Pricer</h1>
+        <p class="subtitle">Cox-Ross-Rubinstein tree · European &amp; American options · Greeks &amp; IV</p>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="price" role="tab" aria-selected="true">Price Option</button>
+        <button class="tab" data-tab="iv" role="tab" aria-selected="false">Implied Volatility</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container layout">
+    <!-- Price tab -->
+    <section id="panel-price" class="panel active" role="tabpanel">
+      <form id="price-form" class="card form-card">
+        <h2>Inputs</h2>
+
+        <fieldset class="field-group">
+          <legend>Underlying price</legend>
+
+          <div class="field">
+            <label class="field-label">
+              Spot source
+              <span class="hint">Choose how to set the current stock price.</span>
+            </label>
+            <div class="radio-row">
+              <label class="radio">
+                <input type="radio" name="spot-mode" value="symbol" checked />
+                Fetch by ticker (Massive.com)
+              </label>
+              <label class="radio">
+                <input type="radio" name="spot-mode" value="manual" />
+                Enter spot manually
+              </label>
+            </div>
+          </div>
+
+          <div class="field" id="symbol-field">
+            <label for="symbol" class="field-label">
+              Symbol
+              <span class="hint">Stock ticker, e.g. AAPL or AMZN. We fetch the previous trading day's close from Massive.com.</span>
+            </label>
+            <div class="input-row">
+              <input id="symbol" name="symbol" type="text" placeholder="AAPL" value="AAPL" />
+              <button type="button" id="fetch-spot-btn" class="btn secondary">Fetch spot</button>
+            </div>
+            <p id="spot-preview" class="spot-preview hidden"></p>
+          </div>
+
+          <div class="field hidden" id="spot-field">
+            <label for="spot" class="field-label">
+              Spot price ($)
+              <span class="hint">Current market price of one share of the underlying stock. Used directly when provided manually.</span>
+            </label>
+            <input id="spot" name="spot" type="number" step="any" min="0.01" placeholder="205.00" />
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label for="strike" class="field-label">
+            Strike ($)
+            <span class="hint">Exercise price of the option — the price at which the holder can buy (call) or sell (put) the stock.</span>
+          </label>
+          <input id="strike" name="strike" type="number" step="any" min="0.01" required placeholder="220" value="220" />
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="vol" class="field-label">
+              Volatility
+              <span class="hint">Expected annual volatility as a decimal. 0.25 = 25%. Higher vol → higher option value.</span>
+            </label>
+            <input id="vol" name="vol" type="number" step="any" min="0" required placeholder="0.25" value="0.25" />
+          </div>
+          <div class="field">
+            <label for="rate" class="field-label">
+              Risk-free rate
+              <span class="hint">Annual interest rate as a decimal (e.g. 0.05 = 5%). Leave blank to use the server default (5%).</span>
+            </label>
+            <input id="rate" name="rate" type="number" step="any" min="-1" max="1" placeholder="0.05" />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="valuation_date" class="field-label">
+              Valuation date
+              <span class="hint">The "as of" date for pricing. Time to expiry = expiry minus this date.</span>
+            </label>
+            <input id="valuation_date" name="valuation_date" type="date" required />
+          </div>
+          <div class="field">
+            <label for="expiry" class="field-label">
+              Expiry date
+              <span class="hint">Option expiration date. Must be on or after the valuation date.</span>
+            </label>
+            <input id="expiry" name="expiry" type="date" required />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="option_type" class="field-label">
+              Option type
+              <span class="hint">Call = right to buy at strike. Put = right to sell at strike.</span>
+            </label>
+            <select id="option_type" name="option_type">
+              <option value="call">Call</option>
+              <option value="put">Put</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="style" class="field-label">
+              Exercise style
+              <span class="hint">European = exercise only at expiry. American = exercise any time before expiry.</span>
+            </label>
+            <select id="style" name="style">
+              <option value="european">European</option>
+              <option value="american">American</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn primary">Calculate price &amp; Greeks</button>
+      </form>
+
+      <div id="price-results" class="card results-card hidden">
+        <h2>Results</h2>
+        <div class="results-meta" id="price-meta"></div>
+        <div class="results-grid" id="price-grid"></div>
+      </div>
+    </section>
+
+    <!-- IV tab -->
+    <section id="panel-iv" class="panel" role="tabpanel" hidden>
+      <form id="iv-form" class="card form-card">
+        <h2>Inputs</h2>
+
+        <div class="field">
+          <label for="iv-market-price" class="field-label">
+            Market price ($)
+            <span class="hint">Observed option price in the market. The solver finds the volatility that reproduces this price.</span>
+          </label>
+          <input id="iv-market-price" name="market_price" type="number" step="any" min="0.01" required placeholder="5.20" />
+        </div>
+
+        <fieldset class="field-group">
+          <legend>Underlying price</legend>
+
+          <div class="field">
+            <label class="field-label">
+              Spot source
+              <span class="hint">Same as the pricing tab — provide a ticker or a manual spot price.</span>
+            </label>
+            <div class="radio-row">
+              <label class="radio">
+                <input type="radio" name="iv-spot-mode" value="symbol" checked />
+                Fetch by ticker
+              </label>
+              <label class="radio">
+                <input type="radio" name="iv-spot-mode" value="manual" />
+                Enter spot manually
+              </label>
+            </div>
+          </div>
+
+          <div class="field" id="iv-symbol-field">
+            <label for="iv-symbol" class="field-label">
+              Symbol
+              <span class="hint">Stock ticker for live spot lookup via Massive.com.</span>
+            </label>
+            <input id="iv-symbol" name="symbol" type="text" placeholder="AAPL" value="AAPL" />
+          </div>
+
+          <div class="field hidden" id="iv-spot-field">
+            <label for="iv-spot" class="field-label">
+              Spot price ($)
+              <span class="hint">Current underlying price used in the IV calculation.</span>
+            </label>
+            <input id="iv-spot" name="spot" type="number" step="any" min="0.01" placeholder="205.00" />
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label for="iv-strike" class="field-label">
+            Strike ($)
+            <span class="hint">Option exercise price.</span>
+          </label>
+          <input id="iv-strike" name="strike" type="number" step="any" min="0.01" required placeholder="220" value="220" />
+        </div>
+
+        <div class="field">
+          <label for="iv-rate" class="field-label">
+            Risk-free rate
+            <span class="hint">Annual rate as a decimal. Leave blank for server default.</span>
+          </label>
+          <input id="iv-rate" name="rate" type="number" step="any" min="-1" max="1" placeholder="0.05" />
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="iv-valuation_date" class="field-label">
+              Valuation date
+              <span class="hint">Pricing date used to compute time to expiry.</span>
+            </label>
+            <input id="iv-valuation_date" name="valuation_date" type="date" required />
+          </div>
+          <div class="field">
+            <label for="iv-expiry" class="field-label">
+              Expiry date
+              <span class="hint">Option expiration date.</span>
+            </label>
+            <input id="iv-expiry" name="expiry" type="date" required />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="iv-option_type" class="field-label">
+              Option type
+              <span class="hint">Call or put.</span>
+            </label>
+            <select id="iv-option_type" name="option_type">
+              <option value="call">Call</option>
+              <option value="put">Put</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="iv-style" class="field-label">
+              Exercise style
+              <span class="hint">European or American.</span>
+            </label>
+            <select id="iv-style" name="style">
+              <option value="european">European</option>
+              <option value="american">American</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn primary">Solve implied volatility</button>
+      </form>
+
+      <div id="iv-results" class="card results-card hidden">
+        <h2>Results</h2>
+        <div class="results-meta" id="iv-meta"></div>
+        <div class="results-grid" id="iv-grid"></div>
+      </div>
+    </section>
+
+    <aside class="sidebar card">
+      <h2>Greeks glossary</h2>
+      <dl class="glossary">
+        <dt>Price</dt>
+        <dd>Fair value of the option in dollars, from the binomial tree.</dd>
+        <dt>Delta (Δ)</dt>
+        <dd>Change in option price per $1 move in the underlying.</dd>
+        <dt>Gamma (Γ)</dt>
+        <dd>Change in delta per $1 move in the underlying.</dd>
+        <dt>Theta (Θ)</dt>
+        <dd>Change in price per year as time passes (usually negative for long options).</dd>
+        <dt>Vega (ν)</dt>
+        <dd>Change in price per 1.0 absolute move in volatility (e.g. 0.20 → 1.20).</dd>
+        <dt>Implied vol</dt>
+        <dd>Volatility that makes the model price match the observed market price.</dd>
+      </dl>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast hidden" role="alert"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

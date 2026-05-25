@@ -1,0 +1,19 @@
+# Virtual environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.nbc
+*.nbi
+
+# Environment secrets
+.env
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

@@ -88,6 +88,44 @@ function renderMetrics(container, items) {
     .join("");
 }
 
+const CHART_TARGETS = [
+  { id: "chart-price-vol", key: "price_vs_volatility" },
+  { id: "chart-delta-spot", key: "delta_vs_stock_price" },
+  { id: "chart-theta-time", key: "theta_vs_time_to_expiration" },
+  { id: "chart-vega-vol", key: "vega_vs_volatility" },
+];
+
+const PLOTLY_CONFIG = {
+  responsive: true,
+  displayModeBar: false,
+};
+
+function renderCharts(charts) {
+  const section = document.getElementById("price-charts-section");
+  const note = document.getElementById("charts-note");
+
+  if (!charts) {
+    section.classList.add("hidden");
+    note.textContent = "";
+    CHART_TARGETS.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el) Plotly.purge(el);
+    });
+    return;
+  }
+
+  section.classList.remove("hidden");
+  note.textContent = "Interactive sensitivity charts at your input parameters (green marker).";
+
+  CHART_TARGETS.forEach(({ id, key }) => {
+    const el = document.getElementById(id);
+    const fig = charts[key];
+    Plotly.react(el, fig.data, fig.layout, PLOTLY_CONFIG);
+  });
+
+  section.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
 function buildSpotPayload(modeName, symbolId, spotId) {
   const manual = document.querySelector(`input[name="${modeName}"]:checked`).value === "manual";
   const payload = {};
@@ -156,6 +194,7 @@ document.getElementById("price-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = e.target.querySelector('button[type="submit"]');
   btn.disabled = true;
+  btn.textContent = "Calculating…";
 
   try {
     const body = {
@@ -188,11 +227,14 @@ document.getElementById("price-form").addEventListener("submit", async (e) => {
       { label: "Vega", value: fmt(data.vega, 4) },
     ]);
 
+    renderCharts(data.charts);
     document.getElementById("price-results").classList.remove("hidden");
   } catch (err) {
     showToast(err.message);
+    renderCharts(null);
   } finally {
     btn.disabled = false;
+    btn.textContent = "Calculate price & Greeks";
   }
 });
 

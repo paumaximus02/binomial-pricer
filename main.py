@@ -4,14 +4,15 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
+from charts import build_greeks_charts
 from core import OptionStyle, OptionType
 from market import MarketDataError, MassiveMarketData, Settings, SpotQuote
 from model import BinomialModel, PricingResult
@@ -55,6 +56,7 @@ class PriceRequest(BaseModel):
     strike: float = Field(..., gt=0)
     rate: float | None = Field(None, ge=-1, le=1)
     vol: float = Field(..., ge=0)
+    q: float = Field(0.0, ge=0, le=1, description="Continuous dividend yield")
     expiry: date = Field(..., description="Option expiry date (YYYY-MM-DD)")
     option_type: OptionType
     style: OptionStyle = OptionStyle.EUROPEAN
@@ -74,6 +76,13 @@ class PriceRequest(BaseModel):
         return expiry
 
 
+class GreeksCharts(BaseModel):
+    price_vs_volatility: dict[str, Any]
+    delta_vs_stock_price: dict[str, Any]
+    theta_vs_time_to_expiration: dict[str, Any]
+    vega_vs_volatility: dict[str, Any]
+
+
 class PriceResponse(BaseModel):
     symbol: str | None
     spot: float
@@ -88,6 +97,7 @@ class PriceResponse(BaseModel):
     gamma: float
     theta: float
     vega: float
+    charts: GreeksCharts | None = None
 
 
 class IVRequest(BaseModel):
@@ -121,6 +131,23 @@ class SpotResponse(BaseModel):
     symbol: str
     price: float
     as_of: str
+
+
+class GreeksChartResponse(BaseModel):
+    S: float
+    K: float
+    T: float
+    r: float
+    sigma: float
+    q: float
+    option_type: OptionType
+    american: bool
+    price: float
+    delta: float
+    gamma: float
+    theta: float
+    vega: float
+    charts: GreeksCharts
 
 
 def _years_between(start: date, end: date) -> float:
@@ -203,7 +230,22 @@ async def price_option_endpoint(
             time_to_expiry=tte,
             option_type=body.option_type,
             style=body.style,
+            dividend_yield=body.q,
         )
+        charts = None
+        if tte > 0:
+            chart_data = build_greeks_charts(
+                spot=spot,
+                strike=body.strike,
+                rate=rate,
+                vol=body.vol,
+                time_to_expiry=tte,
+                option_type=body.option_type,
+                is_american=body.style == OptionStyle.AMERICAN,
+                dividend_yield=body.q,
+                steps=model.steps,
+            )
+            charts = GreeksCharts(**chart_data)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -221,6 +263,7 @@ async def price_option_endpoint(
         gamma=result.gamma,
         theta=result.theta,
         vega=result.vega,
+        charts=charts,
     )
 
 
@@ -256,6 +299,63 @@ async def solve_implied_vol(
         time_to_expiry=tte,
         option_type=body.option_type,
         style=body.style,
+    )
+
+
+@app.get("/greeks-chart", response_model=GreeksChartResponse)
+async def greeks_chart(
+    S: Annotated[float, Query(gt=0, description="Spot price of the underlying")],
+    K: Annotated[float, Query(gt=0, description="Option strike price")],
+    T: Annotated[float, Query(gt=0, description="Time to expiration in years")],
+    r: Annotated[float, Query(ge=-1, le=1, description="Risk-free interest rate (decimal)")],
+    sigma: Annotated[float, Query(ge=0, description="Volatility (decimal, e.g. 0.25 = 25%)")],
+    option_type: OptionType,
+    model: Annotated[BinomialModel, Depends(get_model)],
+    american: Annotated[bool, Query(description="True for American, False for European")] = False,
+    q: Annotated[float, Query(ge=0, le=1, description="Continuous dividend yield (decimal)")] = 0.0,
+) -> GreeksChartResponse:
+    style = OptionStyle.AMERICAN if american else OptionStyle.EUROPEAN
+
+    try:
+        result = model.price_with_greeks(
+            spot=S,
+            strike=K,
+            rate=r,
+            vol=sigma,
+            time_to_expiry=T,
+            option_type=option_type,
+            style=style,
+            dividend_yield=q,
+        )
+        chart_data = build_greeks_charts(
+            spot=S,
+            strike=K,
+            rate=r,
+            vol=sigma,
+            time_to_expiry=T,
+            option_type=option_type,
+            is_american=american,
+            dividend_yield=q,
+            steps=model.steps,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return GreeksChartResponse(
+        S=S,
+        K=K,
+        T=T,
+        r=r,
+        sigma=sigma,
+        q=q,
+        option_type=option_type,
+        american=american,
+        price=result.price,
+        delta=result.delta,
+        gamma=result.gamma,
+        theta=result.theta,
+        vega=result.vega,
+        charts=GreeksCharts(**chart_data),
     )
 
 

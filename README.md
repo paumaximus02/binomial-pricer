@@ -59,6 +59,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 | GET | `/market/spot/{symbol}` | Latest spot price from Massive.com |
 | POST | `/price` | Price option with Greeks |
 | POST | `/iv` | Solve implied volatility |
+| GET | `/greeks-chart` | Price, Greeks, and 4 Plotly sensitivity charts |
 
 ## Example: price an American put
 
@@ -83,6 +84,14 @@ curl -X POST http://127.0.0.1:8000/iv ^
   -H "Content-Type: application/json" ^
   -d "{\"market_price\":5.2,\"spot\":185,\"strike\":180,\"expiry\":\"2026-06-20\",\"option_type\":\"call\"}"
 ```
+
+## Example: Greeks charts
+
+```bash
+curl "http://127.0.0.1:8000/greeks-chart?S=100&K=100&T=1.0&r=0.05&sigma=0.25&option_type=call&american=false&q=0"
+```
+
+Returns option price, Greeks, and four Plotly chart JSON objects (`price_vs_volatility`, `delta_vs_stock_price`, `theta_vs_time_to_expiration`, `vega_vs_volatility`).
 
 ## Notes
 

@@ -44,6 +44,7 @@ class BinomialModel:
             steps=self.steps,
             is_call=option_type == OptionType.CALL,
             is_american=style == OptionStyle.AMERICAN,
+            dividend_yield=0.0,
         )
 
     def price_with_greeks(
@@ -55,8 +56,9 @@ class BinomialModel:
         time_to_expiry: float,
         option_type: OptionType,
         style: OptionStyle = OptionStyle.EUROPEAN,
+        dividend_yield: float = 0.0,
     ) -> PricingResult:
-        self._validate_inputs(spot, strike, rate, vol, time_to_expiry)
+        self._validate_inputs(spot, strike, rate, vol, time_to_expiry, dividend_yield)
         price, delta, gamma, theta, vega = compute_greeks(
             spot=spot,
             strike=strike,
@@ -66,6 +68,7 @@ class BinomialModel:
             steps=self.steps,
             is_call=option_type == OptionType.CALL,
             is_american=style == OptionStyle.AMERICAN,
+            dividend_yield=dividend_yield,
         )
         return PricingResult(price=price, delta=delta, gamma=gamma, theta=theta, vega=vega)
 
@@ -92,6 +95,7 @@ class BinomialModel:
             steps=self.steps,
             is_call=option_type == OptionType.CALL,
             is_american=style == OptionStyle.AMERICAN,
+            dividend_yield=0.0,
         )
         if iv != iv:  # NaN check
             raise ValueError("Could not bracket implied volatility for given market price")
@@ -104,6 +108,7 @@ class BinomialModel:
         rate: float,
         vol: float,
         time_to_expiry: float,
+        dividend_yield: float = 0.0,
     ) -> None:
         if spot <= 0:
             raise ValueError("spot must be positive")
@@ -115,3 +120,5 @@ class BinomialModel:
             raise ValueError("time_to_expiry must be non-negative")
         if not (-1.0 <= rate <= 1.0):
             raise ValueError("rate must be between -1 and 1")
+        if not (0.0 <= dividend_yield <= 1.0):
+            raise ValueError("dividend_yield must be between 0 and 1")

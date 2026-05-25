@@ -139,6 +139,25 @@
         <h2>Results</h2>
         <div class="results-meta" id="price-meta"></div>
         <div class="results-grid" id="price-grid"></div>
+
+        <div id="price-charts-section" class="charts-section hidden">
+          <h3 class="charts-heading">Greeks sensitivity</h3>
+          <p class="charts-note" id="charts-note"></p>
+          <div class="charts-grid">
+            <div class="chart-card">
+              <div id="chart-price-vol" class="chart-plot"></div>
+            </div>
+            <div class="chart-card">
+              <div id="chart-delta-spot" class="chart-plot"></div>
+            </div>
+            <div class="chart-card">
+              <div id="chart-theta-time" class="chart-plot"></div>
+            </div>
+            <div class="chart-card">
+              <div id="chart-vega-vol" class="chart-plot"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -279,6 +298,7 @@
 
   <div id="toast" class="toast hidden" role="alert"></div>
 
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

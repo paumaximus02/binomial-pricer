@@ -8,3 +8,4 @@ massive
 pydantic
 pydantic-settings
 httpx
+plotly
